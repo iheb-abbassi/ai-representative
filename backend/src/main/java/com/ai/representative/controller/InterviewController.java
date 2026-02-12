@@ -192,7 +192,7 @@ public class InterviewController {
      * @return AudioResponse with AI response
      */
     @PostMapping(value = "/ask", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> ask(@RequestBody TextQuestionRequest request) {
+    public ResponseEntity<Map<String, Object>> ask(@Valid @RequestBody TextQuestionRequest request) {
         String question = request != null ? request.getQuestion() : null;
         log.info("Received /ask request, chars: {}", question == null ? 0 : question.length());
 

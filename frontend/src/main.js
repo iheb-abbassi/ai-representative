@@ -2,9 +2,7 @@
       'use strict';
 
       const RAW_API_BASE_URL = (import.meta.env.VITE_API_URL || '').trim();
-      const API_BASE_URL = (RAW_API_BASE_URL && !RAW_API_BASE_URL.includes('%VITE_API_URL%'))
-        ? RAW_API_BASE_URL
-        : 'http://localhost:8080';
+      const API_BASE_URL = RAW_API_BASE_URL || window.location.origin;
 
       function resolveAppToken() {
         const url = new URL(window.location.href);

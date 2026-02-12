@@ -1,16 +1,22 @@
 package com.ai.representative.service;
 
 import com.ai.representative.model.ConversationMessage;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -21,7 +27,7 @@ public class ConversationService {
 
     private static final String SYSTEM_PROMPT_PATH = "prompts/job-candidate-system-prompt.txt";
     private static final String QUESTIONS_PATH = "prompts/common-interview-questions.txt";
-    private final List<ConversationMessage> conversationHistory = new ArrayList<>();
+    private final Map<String, List<ConversationMessage>> conversationHistoryBySession = new ConcurrentHashMap<>();
 
     /**
      * Generates an AI response based on the user's input using the job candidate persona.
@@ -30,11 +36,11 @@ public class ConversationService {
     public String generateResponse(String userInput) {
         try {
             String systemPrompt = loadSystemPrompt();
-            String historyJson = apiClient.formatConversationHistory(conversationHistory);
+            String historyJson = apiClient.formatConversationHistory(new ArrayList<>());
 
             String response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
 
-            log.info("Generated AI response: {}", response);
+            log.info("Generated AI response, chars: {}", response == null ? 0 : response.length());
             return response;
 
         } catch (Exception e) {
@@ -49,23 +55,29 @@ public class ConversationService {
     public String generateResponseWithContext(String userInput) {
         try {
             String systemPrompt = loadSystemPrompt();
+            String sessionId = getCurrentSessionId();
+            List<ConversationMessage> history = getOrCreateHistory(sessionId);
 
-            // Add current exchange to history
-            conversationHistory.add(new ConversationMessage("user", userInput));
+            String response;
+            synchronized (history) {
+                // Add current exchange to history
+                history.add(new ConversationMessage("user", userInput));
 
-            // Generate response with history
-            String historyJson = apiClient.formatConversationHistory(conversationHistory);
-            String response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
+                // Generate response with a safe snapshot of history
+                String historyJson = apiClient.formatConversationHistory(new ArrayList<>(history));
+                response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
 
-            // Add AI response to history
-            conversationHistory.add(new ConversationMessage("assistant", response));
+                // Add AI response to history
+                history.add(new ConversationMessage("assistant", response));
 
-            // Keep last 10 exchanges to avoid token limits
-            if (conversationHistory.size() > 20) {
-                conversationHistory.subList(0, 2).clear();
+                // Keep last 10 exchanges to avoid token limits
+                while (history.size() > 20) {
+                    history.subList(0, 2).clear();
+                }
             }
 
-            log.info("Generated AI response with context: {}", response);
+            log.info("Generated AI response with context, chars: {}, session: {}",
+                    response == null ? 0 : response.length(), sessionId);
             return response;
 
         } catch (Exception e) {
@@ -81,16 +93,12 @@ public class ConversationService {
     public List<String> getCommonInterviewQuestions() {
         try {
             ClassPathResource resource = new ClassPathResource(QUESTIONS_PATH);
-            InputStream inputStream = resource.getInputStream();
             List<String> questions = new ArrayList<>();
 
-            // Read all lines as questions
-            byte[] buffer = new byte[inputStream.available()];
-            inputStream.read(buffer);
-            inputStream.close();
-
-            // Convert to string and split by newline
-            String content = new String(buffer, StandardCharsets.UTF_8);
+            String content;
+            try (InputStream inputStream = resource.getInputStream()) {
+                content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            }
             String[] lines = content.split("\\r?\\n");
 
             // Add all non-empty lines as questions
@@ -113,8 +121,9 @@ public class ConversationService {
      * Resets the conversation history.
      */
     public void resetConversation() {
-        conversationHistory.clear();
-        log.info("Conversation history reset");
+        String sessionId = getCurrentSessionId();
+        conversationHistoryBySession.remove(sessionId);
+        log.info("Conversation history reset for session: {}", sessionId);
     }
 
     /**
@@ -129,6 +138,32 @@ public class ConversationService {
      * Returns the current conversation history size.
      */
     public int getHistorySize() {
-        return conversationHistory.size() / 2;
+        String sessionId = getCurrentSessionId();
+        List<ConversationMessage> history = conversationHistoryBySession.get(sessionId);
+        if (history == null) {
+            return 0;
+        }
+        synchronized (history) {
+            return history.size() / 2;
+        }
+    }
+
+    private List<ConversationMessage> getOrCreateHistory(String sessionId) {
+        return conversationHistoryBySession.computeIfAbsent(
+                sessionId,
+                key -> Collections.synchronizedList(new ArrayList<>())
+        );
+    }
+
+    private String getCurrentSessionId() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return "no-request-context";
+        }
+        HttpServletRequest request = attrs.getRequest();
+        if (request == null) {
+            return "no-request";
+        }
+        return request.getSession(true).getId();
     }
 }

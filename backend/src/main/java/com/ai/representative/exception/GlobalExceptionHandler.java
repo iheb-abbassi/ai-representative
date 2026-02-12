@@ -3,8 +3,10 @@ package com.ai.representative.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
@@ -26,6 +28,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.error("Invalid argument: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(buildErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
+        FieldError firstError = ex.getBindingResult().getFieldErrors().stream().findFirst().orElse(null);
+        String message = firstError != null ? firstError.getDefaultMessage() : "Invalid request";
+        log.error("Validation error: {}", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(buildErrorResponse(message));
     }
 
     @ExceptionHandler(Exception.class)
