@@ -37,6 +37,11 @@ export interface AppStatus {
   lastResponse?: string;
 }
 
+// Text question request type
+export interface TextQuestionRequest {
+  question: string;
+}
+
 // Audio recorder state
 export interface RecorderState {
   isRecording: boolean;

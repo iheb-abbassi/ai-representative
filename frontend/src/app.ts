@@ -9,6 +9,7 @@ import { RecordButton } from './components/RecordButton';
 import { AudioVisualizer } from './components/Visualizer';
 import { StatusDisplay } from './components/StatusDisplay';
 import { ResponsePlayer } from './components/ResponsePlayer';
+import { QuestionPicker, QuestionPickerOptions } from './components/QuestionPicker';
 import type { AppState } from './types/api';
 
 /**
@@ -304,6 +305,11 @@ class App {
     await this.recorder.dispose();
     await this.player.dispose();
     await this.responsePlayer.dispose();
+
+    // Dispose question picker
+    if (this.questionPicker) {
+      this.questionPicker.unmount();
+    }
   }
 }
 

@@ -58,6 +58,38 @@ public class InterviewOrchestrationService {
     }
 
     /**
+     * Processes a text-based interview question (no audio transcription needed).
+     *
+     * @param question The selected question text
+     * @return AudioResponse with the AI response and generated audio
+     */
+    public AudioResponse processTextQuestion(String question) {
+        log.info("Processing text interview question: {}", question);
+
+        try {
+            // Generate AI response directly from text (skip transcription)
+            String aiResponse = conversationService.generateResponseWithContext(question);
+            log.info("AI Response: {}", aiResponse);
+
+            // Convert to speech
+            byte[] audioData = textToSpeechService.synthesize(aiResponse);
+            String audioFormat = textToSpeechService.getAudioFormat();
+            log.info("Audio synthesis complete, size: {} bytes", audioData.length);
+
+            // Build response
+            return AudioResponse.builder()
+                    .transcription(question)  // Echo the question
+                    .response(aiResponse)
+                    .audioFormat(audioFormat)
+                    .audioData(audioData)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error processing text question: {}", question);
+            throw new RuntimeException("Failed to process text question: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Resets the conversation context.
      */
     public void resetConversation() {
