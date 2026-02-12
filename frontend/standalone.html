@@ -890,9 +890,9 @@
     <!-- Main Content: Three Column Layout -->
     <div class="main-content">
       <!-- Left Panel: Question -->
-      <div class="panel panel-left">
-        <div class="panel-header">Your Question</div>
-        <div id="transcription-container" class="panel-content empty">
+      <div class="panel panel-questions">
+        <div class="panel-header">Interview Questions</div>
+        <div id="question-container" class="panel-content empty">
           Tap the microphone to begin…
         </div>
       </div>
@@ -970,7 +970,7 @@
 
       const statusText = document.querySelector('.status-text');
       const statusDot = document.querySelector('.status-dot');
-      const transcriptionContainer = document.getElementById('transcription-container');
+      const transcriptionContainer = document.getElementById('question-container');
       const responseContainer = document.getElementById('response-container');
       const recordButton = document.getElementById('record-button');
       const centerStage = document.getElementById('center-stage');
