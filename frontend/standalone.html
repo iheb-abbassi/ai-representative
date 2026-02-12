@@ -450,16 +450,18 @@
     .question-list {
       display: flex;
       flex-direction: column;
-      gap: var(--space-md);
+      gap: var(--space-xl);
+      padding-inline: var(--space-sm);
     }
 
     .question-item {
       background: var(--bg-elevated);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      padding: var(--space-md);
+      padding: var(--space-lg);
       cursor: pointer;
       transition: all var(--duration-base) var(--ease-smooth);
+      margin-bottom: var(--space-xs);
     }
 
     .question-item:hover {
@@ -526,6 +528,22 @@
       align-items: center;
       justify-content: center;
       z-index: 2;
+    }
+
+    .record-hint {
+      margin-top: var(--space-lg);
+      padding: var(--space-xs) var(--space-md);
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(22, 16, 36, 0.55);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+      z-index: 2;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* Record Button */
@@ -785,6 +803,7 @@
     .footer-compact {
       margin-left: auto;
       padding-left: var(--space-lg);
+      border-left: 1px solid var(--border-subtle);
       color: var(--text-muted);
       font-family: var(--font-body);
       font-size: var(--text-xs);
@@ -847,6 +866,7 @@
       .footer-compact {
         margin-left: 0;
         padding-left: 0;
+        border-left: none;
         width: 100%;
         justify-content: center;
         order: 3;
@@ -910,6 +930,7 @@
             </svg>
           </button>
         </div>
+        <div class="record-hint" aria-hidden="true">Hold Space to Talk</div>
       </div>
 
       <!-- Right Panel: AI Response -->
@@ -956,6 +977,36 @@
 
       const API_BASE_URL = 'http://localhost:8080';
 
+      function resolveAppToken() {
+        const url = new URL(window.location.href);
+        const tokenFromQuery = url.searchParams.get('token');
+        if (tokenFromQuery && tokenFromQuery.trim()) {
+          localStorage.setItem('app_access_token', tokenFromQuery.trim());
+          url.searchParams.delete('token');
+          window.history.replaceState({}, '', url.toString());
+          return tokenFromQuery.trim();
+        }
+        return (localStorage.getItem('app_access_token') || '').trim();
+      }
+
+      const APP_ACCESS_TOKEN = resolveAppToken();
+
+      function buildApiHeaders(initialHeaders) {
+        const headers = new Headers(initialHeaders || {});
+        if (APP_ACCESS_TOKEN) {
+          headers.set('X-APP-TOKEN', APP_ACCESS_TOKEN);
+        }
+        return headers;
+      }
+
+      function apiFetch(url, options) {
+        const safeOptions = options || {};
+        return fetch(url, {
+          ...safeOptions,
+          headers: buildApiHeaders(safeOptions.headers)
+        });
+      }
+
       // Fallback questions if backend is unavailable
       const FALLBACK_QUESTIONS = [
         'Tell me about yourself and your background.',
@@ -995,6 +1046,7 @@
       let audioContext = null;
       let analyser = null;
       let micSource = null;
+      let isSpaceHoldRecording = false;
 
       // Initialize app
       function init() {
@@ -1008,7 +1060,7 @@
       // Load questions from backend or use fallback
       async function loadQuestions() {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/v1/interview/questions`);
+          const response = await apiFetch(`${API_BASE_URL}/api/v1/interview/questions`);
           if (!response.ok) throw new Error('Failed to load questions');
           const data = await response.json();
           const questions = data.questions || FALLBACK_QUESTIONS;
@@ -1054,7 +1106,7 @@
         updateStatus('processing', 'Processing...');
 
         try {
-          const response = await fetch(`${API_BASE_URL}/api/v1/interview/ask`, {
+          const response = await apiFetch(`${API_BASE_URL}/api/v1/interview/ask`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question })
@@ -1322,7 +1374,7 @@
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
 
-          const response = await fetch(`${API_BASE_URL}/api/v1/interview/speak`, {
+          const response = await apiFetch(`${API_BASE_URL}/api/v1/interview/speak`, {
             method: 'POST',
             body: formData
           });
@@ -1442,12 +1494,52 @@
         if (containers.playButton) {
           containers.playButton.addEventListener('click', togglePlayback);
         }
+
+        // Hold SPACE to record; releasing SPACE sends the question.
+        window.addEventListener('keydown', (event) => {
+          if (event.code !== 'Space') return;
+          const target = event.target;
+          const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+          const isEditable = target && (
+            tagName === 'input' ||
+            tagName === 'textarea' ||
+            tagName === 'select' ||
+            target.isContentEditable
+          );
+          if (isEditable || event.repeat) return;
+
+          event.preventDefault();
+          if (!isRecording) {
+            isSpaceHoldRecording = true;
+            startRecording();
+          }
+        });
+
+        window.addEventListener('keyup', (event) => {
+          if (event.code !== 'Space') return;
+          if (!isSpaceHoldRecording) return;
+
+          event.preventDefault();
+          isSpaceHoldRecording = false;
+          if (isRecording) {
+            stopRecording();
+          }
+        });
+
+        window.addEventListener('blur', () => {
+          if (isSpaceHoldRecording) {
+            isSpaceHoldRecording = false;
+            if (isRecording) {
+              stopRecording();
+            }
+          }
+        });
       }
 
       // Handle reset
       async function handleReset() {
         try {
-          await fetch(`${API_BASE_URL}/api/v1/interview/reset`, { method: 'POST' });
+          await apiFetch(`${API_BASE_URL}/api/v1/interview/reset`, { method: 'POST' });
 
           // Clear displays
           if (containers.questionContainer) {

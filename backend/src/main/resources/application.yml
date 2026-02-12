@@ -13,6 +13,9 @@ server:
   port: 8080
   shutdown: graceful
 
+app:
+  access-token: ${APP_ACCESS_TOKEN:}
+
 openai:
   api-key: ${OPENAI_API_KEY:}
   base-url: https://api.openai.com

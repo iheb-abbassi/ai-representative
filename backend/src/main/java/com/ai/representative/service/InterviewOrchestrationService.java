@@ -34,11 +34,11 @@ public class InterviewOrchestrationService {
         try {
             // Step 1: Transcribe audio
             String transcription = transcriptionService.transcribe(audioFile);
-            log.info("Transcription: {}", transcription);
+            log.info("Transcription completed, chars: {}", transcription == null ? 0 : transcription.length());
 
             // Step 2: Generate AI response
             String aiResponse = conversationService.generateResponseWithContext(transcription);
-            log.info("AI Response: {}", aiResponse);
+            log.info("AI response generated, chars: {}", aiResponse == null ? 0 : aiResponse.length());
 
             // Step 3: Convert to speech
             byte[] audioData = textToSpeechService.synthesize(aiResponse);
@@ -66,12 +66,12 @@ public class InterviewOrchestrationService {
      * @return AudioResponse with the AI response and generated audio
      */
     public AudioResponse processTextQuestion(String question) {
-        log.info("Processing text interview question: {}", question);
+        log.info("Processing text interview question, chars: {}", question == null ? 0 : question.length());
 
         try {
             // Generate AI response directly from text (skip transcription)
             String aiResponse = conversationService.generateResponseWithContext(question);
-            log.info("AI Response: {}", aiResponse);
+            log.info("AI response generated, chars: {}", aiResponse == null ? 0 : aiResponse.length());
 
             // Convert to speech
             byte[] audioData = textToSpeechService.synthesize(aiResponse);

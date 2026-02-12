@@ -61,7 +61,7 @@ public class InterviewController {
         } catch (Exception e) {
             log.error("Error processing interview question", e);
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to process interview question: " + e.getMessage());
+            errorResponse.put("error", "Failed to process interview question");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
@@ -193,10 +193,11 @@ public class InterviewController {
      */
     @PostMapping(value = "/ask", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> ask(@RequestBody TextQuestionRequest request) {
-        log.info("Received /ask request with text question: {}", request.getQuestion());
+        String question = request != null ? request.getQuestion() : null;
+        log.info("Received /ask request, chars: {}", question == null ? 0 : question.length());
 
         try {
-            AudioResponse response = orchestrationService.processTextQuestion(request.getQuestion());
+            AudioResponse response = orchestrationService.processTextQuestion(question);
 
             // Build response map
             Map<String, Object> responseBody = new HashMap<>();
@@ -214,7 +215,7 @@ public class InterviewController {
         } catch (Exception e) {
             log.error("Error processing text question", e);
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to process question: " + e.getMessage());
+            errorResponse.put("error", "Failed to process question");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

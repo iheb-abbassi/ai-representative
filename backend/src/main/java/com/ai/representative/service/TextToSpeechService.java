@@ -21,7 +21,7 @@ public class TextToSpeechService {
             throw new IllegalArgumentException("Text cannot be null or empty");
         }
 
-        log.info("Synthesizing speech for text: {}", text.substring(0, Math.min(50, text.length())));
+        log.info("Synthesizing speech, chars: {}", text.length());
 
         try {
             byte[] audioData = apiClient.textToSpeech(text);

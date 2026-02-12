@@ -2,6 +2,7 @@ package com.ai.representative.service;
 
 import com.ai.representative.config.OpenAIConfig;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,8 @@ public class OpenAiApiClient {
 
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + ": " + response.body().string());
+                String errorBody = response.body() != null ? response.body().string() : "";
+                throw new IOException(buildOpenAiError("request", response.code(), errorBody));
             }
             return response.body().string();
         }
@@ -90,7 +92,7 @@ public class OpenAiApiClient {
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 String errorBody = response.body() != null ? response.body().string() : "Unknown error";
-                throw new IOException("Transcription failed: " + response.code() + " - " + errorBody);
+                throw new IOException(buildOpenAiError("transcription", response.code(), errorBody));
             }
 
             String responseBody = response.body().string();
@@ -169,7 +171,7 @@ public class OpenAiApiClient {
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 String errorBody = response.body() != null ? response.body().string() : "Unknown error";
-                throw new IOException("TTS failed: " + response.code() + " - " + errorBody);
+                throw new IOException(buildOpenAiError("tts", response.code(), errorBody));
             }
 
             return response.body().bytes();
@@ -184,5 +186,30 @@ public class OpenAiApiClient {
             return "[]";
         }
         return gson.toJson(history);
+    }
+
+    private String buildOpenAiError(String operation, int httpStatus, String errorBody) {
+        String code = "unknown";
+        String type = "unknown";
+
+        try {
+            JsonObject root = gson.fromJson(errorBody, JsonObject.class);
+            if (root != null) {
+                JsonElement errorElement = root.get("error");
+                if (errorElement != null && errorElement.isJsonObject()) {
+                    JsonObject errorObj = errorElement.getAsJsonObject();
+                    if (errorObj.has("code") && !errorObj.get("code").isJsonNull()) {
+                        code = errorObj.get("code").getAsString();
+                    }
+                    if (errorObj.has("type") && !errorObj.get("type").isJsonNull()) {
+                        type = errorObj.get("type").getAsString();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Keep generic fallback when error payload is not JSON.
+        }
+
+        return String.format("OpenAI %s failed (http=%d, code=%s, type=%s)", operation, httpStatus, code, type);
     }
 }
