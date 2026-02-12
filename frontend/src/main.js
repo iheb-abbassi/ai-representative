@@ -9,6 +9,7 @@
         const tokenFromQuery = url.searchParams.get('token');
         if (tokenFromQuery && tokenFromQuery.trim()) {
           localStorage.setItem('app_access_token', tokenFromQuery.trim());
+          sessionStorage.setItem('app_access_token', tokenFromQuery.trim());
           url.searchParams.delete('token');
           window.history.replaceState({}, '', url.toString());
           return tokenFromQuery.trim();
@@ -16,13 +17,21 @@
         return (localStorage.getItem('app_access_token') || '').trim();
       }
 
-      const APP_ACCESS_TOKEN = resolveAppToken();
+      resolveAppToken();
+
+      function getAccessToken() {
+        const fromLocal = (localStorage.getItem('app_access_token') || '').trim();
+        if (fromLocal) return fromLocal;
+        const fromSession = (sessionStorage.getItem('app_access_token') || '').trim();
+        if (fromSession) return fromSession;
+        return '';
+      }
 
       function buildApiHeaders(initialHeaders) {
         const headers = new Headers(initialHeaders || {});
-        if (APP_ACCESS_TOKEN) {
-          headers.set('X-APP-TOKEN', APP_ACCESS_TOKEN);
-        }
+        const token = getAccessToken();
+        // Always send header so every request includes the auth key slot.
+        headers.set('X-APP-TOKEN', token);
         return headers;
       }
 
