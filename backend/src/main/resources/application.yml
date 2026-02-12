@@ -22,7 +22,7 @@ openai:
     max-tokens: 500
   transcription:
     model: whisper-1
-    language: en
+    language: en,de
   tts:
     model: tts-1
     voice: alloy

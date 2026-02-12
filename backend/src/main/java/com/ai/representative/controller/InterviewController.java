@@ -2,6 +2,7 @@ package com.ai.representative.controller;
 
 import com.ai.representative.model.dto.AudioResponse;
 import com.ai.representative.model.dto.HealthResponse;
+import com.ai.representative.model.dto.TextQuestionRequest;
 import com.ai.representative.service.InterviewOrchestrationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -146,6 +147,76 @@ public class InterviewController {
         response.put("status", "UP");
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get list of common interview questions.
+     *
+     * @return List of questions
+     */
+    @GetMapping("/questions")
+    public ResponseEntity<Map<String, Object>> getQuestions() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            var questions = orchestrationService.getCommonInterviewQuestions();
+            if (questions == null) {
+                log.warn("Question service returned null question list, using fallback");
+                questions = java.util.List.of();
+            }
+
+            response.put("questions", questions);
+            response.put("count", questions.size());
+            log.info("Returning {} interview questions", questions.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to load interview questions, using fallback", e);
+            var fallbackQuestions = java.util.List.of(
+                    "Tell me about yourself and your background.",
+                    "What motivated you to pursue a career in technology?",
+                    "Describe a project where you had to overcome a significant technical challenge.",
+                    "What do you enjoy most about working in a team environment?",
+                    "Where do you see yourself in five years?"
+            );
+
+            response.put("questions", fallbackQuestions);
+            response.put("count", fallbackQuestions.size());
+            response.put("fallback", true);
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    /**
+     * Submit a text-based question (no audio required).
+     *
+     * @param request The text question
+     * @return AudioResponse with AI response
+     */
+    @PostMapping(value = "/ask", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> ask(@RequestBody TextQuestionRequest request) {
+        log.info("Received /ask request with text question: {}", request.getQuestion());
+
+        try {
+            AudioResponse response = orchestrationService.processTextQuestion(request.getQuestion());
+
+            // Build response map
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("transcription", response.getTranscription());
+            responseBody.put("response", response.getResponse());
+
+            // Return base64 encoded audio
+            String base64Audio = java.util.Base64.getEncoder().encodeToString(response.getAudioData());
+            responseBody.put("audioData", base64Audio);
+            responseBody.put("audioFormat", response.getAudioFormat());
+
+            log.info("Successfully processed text question");
+            return ResponseEntity.ok(responseBody);
+
+        } catch (Exception e) {
+            log.error("Error processing text question", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to process question: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     /**

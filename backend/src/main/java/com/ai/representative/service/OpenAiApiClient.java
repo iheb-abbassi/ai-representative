@@ -57,13 +57,29 @@ public class OpenAiApiClient {
      */
     public String transcribe(byte[] audioData, String filename) throws IOException {
         validateApiKey();
-        MultipartBody requestBody = new MultipartBody.Builder()
+        String languageConfig = config.getTranscriptionLanguage();
+        String normalizedLanguageConfig = languageConfig == null ? "" : languageConfig.trim();
+
+        MultipartBody.Builder requestBuilder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", filename,
                         RequestBody.create(audioData,
                                 MediaType.parse("audio/webm")))
-                .addFormDataPart("model", config.getTranscriptionModel())
-                .build();
+                .addFormDataPart("model", config.getTranscriptionModel());
+
+        // OpenAI transcription accepts a single language code.
+        // If multiple languages are configured (e.g. "en,de"), avoid forcing one language
+        // and instead bias transcription using a strict prompt.
+        if (!normalizedLanguageConfig.isEmpty() && !normalizedLanguageConfig.contains(",")) {
+            requestBuilder.addFormDataPart("language", normalizedLanguageConfig);
+        } else if (!normalizedLanguageConfig.isEmpty()) {
+            requestBuilder.addFormDataPart(
+                    "prompt",
+                    "Spoken language is either English or German. Transcribe exactly in the original language and do not translate."
+            );
+        }
+
+        MultipartBody requestBody = requestBuilder.build();
 
         Request request = new Request.Builder()
                 .url(config.getBaseUrl() + "/v1/audio/transcriptions")

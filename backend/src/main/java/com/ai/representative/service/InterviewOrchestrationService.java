@@ -7,6 +7,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.ai.representative.model.dto.AudioResponse;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -104,5 +106,14 @@ public class InterviewOrchestrationService {
      */
     public int getHistorySize() {
         return conversationService.getHistorySize();
+    }
+
+    /**
+     * Gets the list of common interview questions.
+     *
+     * @return List of interview questions
+     */
+    public List<String> getCommonInterviewQuestions() {
+        return conversationService.getCommonInterviewQuestions();
     }
 }

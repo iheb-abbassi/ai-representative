@@ -7,6 +7,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ public class ConversationService {
 
     /**
      * Generates an AI response based on the user's input using the job candidate persona.
+     * This method does NOT use conversation history.
      */
     public String generateResponse(String userInput) {
         try {
@@ -44,8 +46,32 @@ public class ConversationService {
     /**
      * Generates a response with conversation history context.
      */
-    public String generateResponse(String userInput) {
-        return generateResponseWithContext(userInput);
+    public String generateResponseWithContext(String userInput) {
+        try {
+            String systemPrompt = loadSystemPrompt();
+
+            // Add current exchange to history
+            conversationHistory.add(new ConversationMessage("user", userInput));
+
+            // Generate response with history
+            String historyJson = apiClient.formatConversationHistory(conversationHistory);
+            String response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
+
+            // Add AI response to history
+            conversationHistory.add(new ConversationMessage("assistant", response));
+
+            // Keep last 10 exchanges to avoid token limits
+            if (conversationHistory.size() > 20) {
+                conversationHistory.subList(0, 2).clear();
+            }
+
+            log.info("Generated AI response with context: {}", response);
+            return response;
+
+        } catch (Exception e) {
+            log.error("Error generating conversation response with context", e);
+            throw new RuntimeException("Failed to generate response: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -80,32 +106,6 @@ public class ConversationService {
         } catch (IOException e) {
             log.error("Error loading interview questions", e);
             return new ArrayList<>();
-        }
-    }
-        try {
-            String systemPrompt = loadSystemPrompt();
-
-            // Add current exchange to history
-            conversationHistory.add(new ConversationMessage("user", userInput));
-
-            // Generate response with history
-            String historyJson = apiClient.formatConversationHistory(conversationHistory);
-            String response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
-
-            // Add AI response to history
-            conversationHistory.add(new ConversationMessage("assistant", response));
-
-            // Keep last 10 exchanges to avoid token limits
-            if (conversationHistory.size() > 20) {
-                conversationHistory.subList(0, 2).clear();
-            }
-
-            log.info("Generated AI response with context: {}", response);
-            return response;
-
-        } catch (Exception e) {
-            log.error("Error generating conversation response with context", e);
-            throw new RuntimeException("Failed to generate response: " + e.getMessage(), e);
         }
     }
 

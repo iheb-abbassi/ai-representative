@@ -40,6 +40,9 @@ public class OpenAIConfig {
     @Value("${openai.transcription.model:whisper-1}")
     private String transcriptionModel;
 
+    @Value("${openai.transcription.language:en}")
+    private String transcriptionLanguage;
+
     @PostConstruct
     public void initializeApiKeyFallback() {
         if (apiKey != null && !apiKey.trim().isEmpty()) {
