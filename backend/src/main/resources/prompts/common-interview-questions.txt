@@ -7,3 +7,5 @@ How well does he fit the job requirements?
 What are his strengths and weaknesses?
 
 Where does he stand out compared to other candidates?
+
+How and why this app was built?
