@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Interview Representative - Your AI-powered interview assistant">
+  <meta name="theme-color" content="#0f172a">
+  <title>AI Interview Representative</title>
+  <script>
+    // Redirect to standalone version to avoid CSP issues
+    if (window.location.pathname !== '/' && !window.location.pathname.endsWith('standalone.html')) {
+      window.location.href = '/standalone.html';
+    }
+  </script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .redirect-notice {
+      text-align: center;
+      padding: 2rem;
+      color: white;
+    }
+    .redirect-notice h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .redirect-notice p {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="redirect-notice">
+    <h1>🎤 AI Interview Representative</h1>
+    <p>Redirecting to standalone version...</p>
+    <p><small>If not redirected automatically, <a href="/standalone.html" style="color: white;">click here</a></small></p>
+  </div>
+  <script>
+    setTimeout(() => {
+      window.location.href = '/standalone.html';
+    }, 500);
+  </script>
+</body>
+</html>

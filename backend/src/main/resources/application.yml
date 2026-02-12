@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: ai-representative
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+      enabled: true
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+  shutdown: graceful
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  base-url: https://api.openai.com
+  chat:
+    model: gpt-4o
+    temperature: 0.7
+    max-tokens: 500
+  transcription:
+    model: whisper-1
+    language: en
+  tts:
+    model: tts-1
+    voice: alloy
+    response-format: mp3
+
+audio:
+  supported-formats: audio/mp3,audio/wav,audio/mpeg,audio/m4a,audio/ogg,audio/webm
+  max-size-bytes: 26214400
+  chunk-size: 8192
+
+cors:
+  allowed-origins: http://localhost:5173,http://localhost:3000
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+logging:
+  level:
+    com.ai.representative: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

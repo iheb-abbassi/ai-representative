@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: ai-representative
+
+# Production overrides
+logging:
+  level:
+    com.ai.representative: WARN
+    dev.langchain4j: WARN
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
