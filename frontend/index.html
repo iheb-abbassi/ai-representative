@@ -3,51 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="AI Interview Representative - Your AI-powered interview assistant">
-  <meta name="theme-color" content="#0f172a">
   <title>AI Interview Representative</title>
-  <script>
-    // Redirect to standalone version to avoid CSP issues
-    if (window.location.pathname !== '/' && !window.location.pathname.endsWith('standalone.html')) {
-      window.location.href = '/standalone.html';
-    }
-  </script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .redirect-notice {
-      text-align: center;
-      padding: 2rem;
-      color: white;
-    }
-    .redirect-notice h1 {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    .redirect-notice p {
-      font-size: 1rem;
-      opacity: 0.9;
-    }
-  </style>
+  <meta name="description" content="AI Interview Representative - Your AI-powered interview assistant">
+  <meta name="theme-color" content="#0a0612">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https: http://localhost:8080; media-src blob: 'self'; img-src 'self' data:; font-src 'self' data:;">
+  <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
-  <div class="redirect-notice">
-    <h1>🎤 AI Interview Representative</h1>
-    <p>Redirecting to standalone version...</p>
-    <p><small>If not redirected automatically, <a href="/standalone.html" style="color: white;">click here</a></small></p>
+  <div class="app-container">
+    <div class="top-bar">
+      <div class="header-left">
+        <span class="header-title">Iheb's AI Interview Representative</span>
+        <span class="header-subtitle">Your intelligent voice assistant</span>
+      </div>
+      <div class="status-compact">
+        <span class="status-dot idle"></span>
+        <span class="status-text">Ready</span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="panel panel-questions">
+        <div class="panel-header">Interview Questions</div>
+        <div id="question-container" class="question-content empty">
+          <span class="question-picker-loading">Loading interview questions...</span>
+        </div>
+      </div>
+
+      <div class="center-stage">
+        <div class="visualizer-integrated">
+          <canvas id="audio-visualizer" width="600" height="160"></canvas>
+        </div>
+        <div class="record-button-wrapper">
+          <button id="record-button" class="record-button" aria-label="Start recording">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="record-hint" aria-hidden="true">Hold Space to Talk</div>
+      </div>
+
+      <div class="panel panel-response">
+        <div class="panel-header">AI Response</div>
+        <div class="panel-response-body">
+          <div id="recorded-question-container" class="mic-question-box empty">
+            Your recorded question will appear here...
+          </div>
+          <div id="response-container" class="panel-content empty">
+            Your answer will appear here…
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div id="player-container" class="player-container">
+        <button id="play-button" class="play-button" aria-label="Play response">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+        <div class="progress-compact">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="time-display" id="time-display">0:00 / 0:00</div>
+        </div>
+      </div>
+
+      <button id="reset-button" class="btn">Reset</button>
+
+      <div class="footer-compact">
+        Powered by GPT-4o • Backend: <a id="backend-link" href="#" rel="noopener noreferrer"></a>
+      </div>
+    </div>
   </div>
-  <script>
-    setTimeout(() => {
-      window.location.href = '/standalone.html';
-    }, 500);
-  </script>
+
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

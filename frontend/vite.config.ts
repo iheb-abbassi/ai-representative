@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 
 export default defineConfig({
   root: '.',
@@ -6,6 +7,10 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'index.html'),
+        standalone: resolve(__dirname, 'standalone.html'),
+      },
       output: {
         manualChunks: undefined,
       },
