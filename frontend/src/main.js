@@ -30,6 +30,7 @@
         const safeOptions = options || {};
         return fetch(url, {
           ...safeOptions,
+          credentials: 'include',
           headers: buildApiHeaders(safeOptions.headers)
         });
       }
