@@ -405,6 +405,11 @@
       font-style: italic;
     }
 
+    #response-container,
+    #recorded-question-container {
+      white-space: pre-line;
+    }
+
     /* Scrollbar styling */
     .panel-content::-webkit-scrollbar,
     .question-content::-webkit-scrollbar {

@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -27,6 +28,7 @@ public class ConversationService {
 
     private static final String SYSTEM_PROMPT_PATH = "prompts/job-candidate-system-prompt.txt";
     private static final String QUESTIONS_PATH = "prompts/common-interview-questions.txt";
+    private static final Pattern SENTENCE_SPLIT_PATTERN = Pattern.compile("(?<=[.!?])\\s+");
     private final Map<String, List<ConversationMessage>> conversationHistoryBySession = new ConcurrentHashMap<>();
 
     /**
@@ -38,7 +40,8 @@ public class ConversationService {
             String systemPrompt = loadSystemPrompt();
             String historyJson = apiClient.formatConversationHistory(new ArrayList<>());
 
-            String response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
+            String rawResponse = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
+            String response = normalizeResponseFormat(rawResponse);
 
             log.info("Generated AI response, chars: {}", response == null ? 0 : response.length());
             return response;
@@ -65,7 +68,8 @@ public class ConversationService {
 
                 // Generate response with a safe snapshot of history
                 String historyJson = apiClient.formatConversationHistory(new ArrayList<>(history));
-                response = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
+                String rawResponse = apiClient.chatCompletion(systemPrompt, userInput, historyJson);
+                response = normalizeResponseFormat(rawResponse);
 
                 // Add AI response to history
                 history.add(new ConversationMessage("assistant", response));
@@ -165,5 +169,39 @@ public class ConversationService {
             return "no-request";
         }
         return request.getSession(true).getId();
+    }
+
+    private String normalizeResponseFormat(String text) {
+        if (text == null || text.isBlank()) {
+            return text;
+        }
+
+        String normalized = text.replace("\r\n", "\n").trim();
+        String[] paragraphs = normalized.split("\\n+");
+        List<String> lines = new ArrayList<>();
+
+        for (String paragraph : paragraphs) {
+            String p = paragraph.trim();
+            if (p.isEmpty()) {
+                continue;
+            }
+
+            // Remove simple bullet prefix so each idea becomes plain line text.
+            p = p.replaceFirst("^[-*•]\\s+", "");
+            String[] sentences = SENTENCE_SPLIT_PATTERN.split(p);
+            for (String sentence : sentences) {
+                String s = sentence.trim();
+                if (!s.isEmpty()) {
+                    lines.add(s);
+                }
+            }
+        }
+
+        if (lines.isEmpty()) {
+            return normalized;
+        }
+
+        // One idea per line with exactly one blank line between lines.
+        return String.join("\n\n", lines);
     }
 }
