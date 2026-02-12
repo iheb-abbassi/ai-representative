@@ -19,6 +19,7 @@ public class ConversationService {
     private final OpenAiApiClient apiClient;
 
     private static final String SYSTEM_PROMPT_PATH = "prompts/job-candidate-system-prompt.txt";
+    private static final String QUESTIONS_PATH = "prompts/common-interview-questions.txt";
     private final List<ConversationMessage> conversationHistory = new ArrayList<>();
 
     /**
@@ -43,7 +44,44 @@ public class ConversationService {
     /**
      * Generates a response with conversation history context.
      */
-    public String generateResponseWithContext(String userInput) {
+    public String generateResponse(String userInput) {
+        return generateResponseWithContext(userInput);
+    }
+
+    /**
+     * Load common interview questions for the question picker.
+     * Returns list of questions as a single string with newlines.
+     */
+    public List<String> getCommonInterviewQuestions() {
+        try {
+            ClassPathResource resource = new ClassPathResource(QUESTIONS_PATH);
+            InputStream inputStream = resource.getInputStream();
+            List<String> questions = new ArrayList<>();
+
+            // Read all lines as questions
+            byte[] buffer = new byte[inputStream.available()];
+            inputStream.read(buffer);
+            inputStream.close();
+
+            // Convert to string and split by newline
+            String content = new String(buffer, StandardCharsets.UTF_8);
+            String[] lines = content.split("\\r?\\n");
+
+            // Add all non-empty lines as questions
+            for (String line : lines) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) {
+                    questions.add(trimmed);
+                }
+            }
+
+            log.info("Loaded {} interview questions", questions.size());
+            return questions;
+        } catch (IOException e) {
+            log.error("Error loading interview questions", e);
+            return new ArrayList<>();
+        }
+    }
         try {
             String systemPrompt = loadSystemPrompt();
 
